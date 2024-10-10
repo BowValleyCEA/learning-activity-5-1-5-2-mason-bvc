@@ -7,9 +7,23 @@ using VideoId = int;
     Philosophy:
 
     This is designed around the "D" (Dependency Inversion) in SOLID. This
-    class responsible for organizing customers and videos should be aware of
+    class is responsible for organizing customers and videos should be aware of
     customers and videos, but customers and videos should not be aware of
-    the System. Thus,
+    the System.
+
+    I chose not to give videos an IsRented field simply because this would
+    lock me into doing a linear search (even though I do it anyway in places
+    where I don't have to in this learning assignment), so I opted to use
+    multiple dictionaries instead (this is basically standard and encouraged
+    practice when making SQL lookup tables!) but from an organizational and
+    learning standpoint, it seems to have been the thing to do. Simultaneously,
+    the video being aware of whether or not its rented seems to betray the "D"
+    in SOLID a bit because it telegraphs some sort of small awareness of how it
+    should be used (VHS tapes in real life can exist independently of a rental
+    store POS system).
+
+    Thus, both the Video and the Customer structs are POD, and multiple, albeit
+    intentionally redundant dictionaries are used.
 */
 
 public class System
@@ -39,7 +53,9 @@ public class System
     private readonly Database<Video> _videos = new();
     private readonly Dictionary<CustomerId, HashSet<VideoId>> _customerToRentedVideos = [];
     private readonly Dictionary<VideoId, CustomerId> _rentedVideoToCustomer = [];
+    private readonly Dictionary<CustomerId, HashSet<VideoId>> _customerRentalHistory = [];
     public ICollection<VideoId> RentedVideos => _rentedVideoToCustomer.Keys;
+    public IReadOnlyDictionary<CustomerId, HashSet<VideoId>> RentalHistory => _customerRentalHistory;
 
     private static List<int> Search<T_RECORD, T_QUERY>(Database<T_RECORD> database, Func<T_RECORD, T_QUERY, bool> queryDelegate, T_QUERY query)
     {
@@ -83,9 +99,16 @@ public class System
             _customerToRentedVideos[customerId] = videoIds;
         }
 
+        if (!_customerRentalHistory.TryGetValue(customerId, out HashSet<VideoId>? historicVideoIds))
+        {
+            historicVideoIds = ([]);
+            _customerRentalHistory[customerId] = historicVideoIds;
+        }
+
         videoIds.Add(videoId);
         _rentedVideoToCustomer[videoId] = customerId;
         _customerToRentedVideos[customerId].Add(videoId);
+        _customerRentalHistory[customerId].Add(videoId);
     }
 
     public void ReturnVideo(VideoId videoId)

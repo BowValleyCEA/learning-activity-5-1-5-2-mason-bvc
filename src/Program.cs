@@ -158,8 +158,17 @@ void LearningActivity5_2()
         Console.WriteLine($"{video.Name} ({video.ReleaseDate.Year})");
     }
 
+    Console.WriteLine("Returning All Quiet 1930...");
     system.ReturnVideo(allQuiet1930);
     Debug.Assert(system.RentedVideos.Count == 0);
+
+    Console.WriteLine("Rental history for John: ");
+
+    foreach (var videoId in system.RentalHistory[john])
+    {
+        var video = system.GetVideo(videoId);
+        Console.WriteLine($"{video.Name} ({video.ReleaseDate.Year})");
+    }
 }
 
 enum GameSelection
